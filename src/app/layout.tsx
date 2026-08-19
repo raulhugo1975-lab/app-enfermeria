@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from 'sonner';
 import InstallPwaPrompt from "@/components/InstallPwaPrompt";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -39,19 +40,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="EnferApp" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(reg) { console.log('[SW] Registrado:', reg.scope); })
-                    .catch(function(err) { console.warn('[SW] Error:', err); });
-                });
-              }
-            `,
-          }}
-        />
       </head>
       <body className={`${inter.className} bg-slate-50 text-slate-900`}>
         <AuthProvider>
@@ -62,6 +50,7 @@ export default function RootLayout({
           </main>
           <Toaster richColors position="top-center" />
           <InstallPwaPrompt />
+          <ServiceWorkerRegister />
         </AuthProvider>
       </body>
     </html>
