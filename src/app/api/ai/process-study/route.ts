@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const genai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY!,
 });
 
 export async function POST(request: Request) {
@@ -40,19 +40,14 @@ Usa siempre lenguaje técnico médico adecuado y estructurado en Markdown (con l
         actionPrompt = 'Analiza y sintetiza la información clínica del siguiente texto.';
     }
 
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
-      max_tokens: 3000,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `${actionPrompt}\n\nAquí tienes el material bibliográfico:\n\n${content}`
-        }
-      ]
+    const fullPrompt = `${systemPrompt}\n\n${actionPrompt}\n\nAquí tienes el material bibliográfico:\n\n${content}`;
+
+    const response = await genai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: fullPrompt,
     });
 
-    const responseContent = message.content[0].type === 'text' ? message.content[0].text : 'No se pudo generar una respuesta en formato texto.';
+    const responseContent = response.text ?? 'No se pudo generar una respuesta en formato texto.';
 
     return NextResponse.json({ result: responseContent });
   } catch (error: any) {
@@ -60,3 +55,4 @@ Usa siempre lenguaje técnico médico adecuado y estructurado en Markdown (con l
     return NextResponse.json({ error: 'Ocurrió un error al procesar el material.' }, { status: 500 });
   }
 }
+
