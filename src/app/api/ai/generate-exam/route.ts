@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const genai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY!,
 });
 
 export async function POST(request: Request) {
@@ -33,38 +33,33 @@ Incluye una mezcla equilibrada de casos clínicos prácticos y conceptos teóric
         "Tercera opción posible",
         "Cuarta opción posible"
       ],
-      "respuesta_correcta_index": 0, // Índice numérico de 0 a 3 indicando cuál es la correcta
+      "respuesta_correcta_index": 0,
       "explicacion": "Explicación exhaustiva del fundamento médico y/o de enfermería de por qué es la correcta y por qué las demás son falsas."
     }
   ]
 }`;
 
-    const actionPrompt = `Materia: ${materia}\nTema específico a evaluar: ${tema}\n\nGenera el examen en formato JSON ahora.`;
+    const actionPrompt = `${systemPrompt}\n\nMateria: ${materia}\nTema específico a evaluar: ${tema}\n\nGenera el examen en formato JSON ahora.`;
 
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
-      max_tokens: 3000,
-      temperature: 0.2, // Baja temperatura para consistencia de JSON
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: actionPrompt
-        }
-      ]
+    const response = await genai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: actionPrompt,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.2,
+      },
     });
 
-    let responseText = message.content[0].type === 'text' ? message.content[0].text : '';
-    
-    // Limpieza de posibles tags markdown de JSON si Claude los agregó
+    let responseText = response.text ?? '';
+    // Limpieza defensiva de posibles backticks
     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     try {
       const jsonParsed = JSON.parse(responseText);
       return NextResponse.json({ result: jsonParsed });
     } catch (parseError) {
-      console.error('Error parseando JSON de Claude:', responseText);
-      return NextResponse.json({ error: 'Claude no generó un JSON válido.' }, { status: 500 });
+      console.error('Error parseando JSON de Gemini:', responseText);
+      return NextResponse.json({ error: 'Gemini no generó un JSON válido.' }, { status: 500 });
     }
 
   } catch (error: any) {
@@ -72,3 +67,4 @@ Incluye una mezcla equilibrada de casos clínicos prácticos y conceptos teóric
     return NextResponse.json({ error: 'Ocurrió un error al generar el examen.' }, { status: 500 });
   }
 }
+

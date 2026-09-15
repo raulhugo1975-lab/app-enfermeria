@@ -7,62 +7,62 @@ import Link from "next/link";
 import { BookOpen, Loader2, Gift } from "lucide-react";
 
 function RegisterForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [pais, setPais] = useState("");
-  const [universidad, setUniversidad] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const refId = searchParams.get("ref"); // ID del usuario que invitó
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // 1. SignUp in Supabase Auth
-    const { data, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email_nuevo") as string;
+    const password = formData.get("password_nuevo") as string;
+    const nombre = formData.get("nombre_nuevo") as string;
+    const pais = formData.get("pais_nuevo") as string;
+    const universidad = formData.get("universidad_nuevo") as string;
 
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      // 2. Calcular subscription_ends_at (7 días si viene con ?ref=, de lo contrario null)
-      const trialEnd = refId
-        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        : null;
-
-      // 3. Insert into profiles table
-      const { error: profileError } = await supabase.from("profiles").insert([
-        {
-          id: data.user.id,
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           email,
+          password,
           nombre,
           pais,
           universidad,
-          role: refId ? 'beta_tester' : 'user',
-          subscription_ends_at: trialEnd,
-          is_active: true,
-        },
-      ]);
+          refId
+        })
+      });
 
-      if (profileError) {
-        console.error("Profile creation error:", profileError);
-        setError("Usuario creado, pero hubo un error guardando el perfil.");
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.error || 'Error al registrar el usuario');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Iniciar sesión automáticamente en el cliente
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError("Usuario creado, pero hubo un error al iniciar sesión.");
         setLoading(false);
         return;
       }
 
       router.push("/");
+    } catch (err: any) {
+      setError(err.message || 'Error de conexión');
+      setLoading(false);
     }
   };
 
@@ -97,54 +97,73 @@ function RegisterForm() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700">Nombre completo</label>
+                <label htmlFor="nombre" className="block text-sm font-medium text-slate-700">Nombre completo</label>
                 <div className="mt-1">
                   <input
+                    id="nombre"
+                    name="nombre_nuevo"
                     type="text"
                     required
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                    className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    disabled={loading}
+                    placeholder="Escribe tu nombre y apellido"
+                    style={{ color: '#1e293b', backgroundColor: '#ffffff' }}
+                    className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700">Email</label>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email</label>
                 <div className="mt-1">
                   <input
+                    id="email"
+                    name="email_nuevo"
                     type="email"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    disabled={loading}
+                    placeholder="tu@correo.com"
+                    style={{ color: '#1e293b', backgroundColor: '#ffffff' }}
+                    className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">Contraseña</label>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700">Contraseña</label>
               <div className="mt-1">
                 <input
+                  id="password"
+                  name="password_nuevo"
                   type="password"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  disabled={loading}
+                  placeholder="Mínimo 6 caracteres"
+                  style={{ color: '#1e293b', backgroundColor: '#ffffff' }}
+                  className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700">País</label>
+                <label htmlFor="pais" className="block text-sm font-medium text-slate-700">País</label>
                 <div className="mt-1">
                   <select
+                    id="pais"
+                    name="pais_nuevo"
                     required
-                    value={pais}
-                    onChange={(e) => setPais(e.target.value)}
-                    className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+                    disabled={loading}
+                    autoComplete="off"
+                    defaultValue=""
+                    style={{ color: '#1e293b', backgroundColor: '#ffffff' }}
+                    className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   >
                     <option value="">Selecciona un país</option>
                     <option value="Argentina">Argentina</option>
@@ -160,15 +179,19 @@ function RegisterForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700">Universidad / Institución</label>
+                <label htmlFor="universidad" className="block text-sm font-medium text-slate-700">Universidad / Institución</label>
                 <div className="mt-1">
                   <input
+                    id="universidad"
+                    name="universidad_nuevo"
                     type="text"
                     required
-                    value={universidad}
-                    onChange={(e) => setUniversidad(e.target.value)}
-                    placeholder="Ej. UBA, Cruz Roja..."
-                    className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    disabled={loading}
+                    placeholder="Ej. UBA, Cruz Roja, etc. (Escribe aquí)"
+                    style={{ color: '#1e293b', backgroundColor: '#ffffff' }}
+                    className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
               </div>

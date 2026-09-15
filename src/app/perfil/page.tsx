@@ -24,13 +24,14 @@ export default function PerfilPage() {
     }
   }, [profile]);
 
-  if (loading) {
-    return <div className="min-h-screen flex justify-center items-center"><Loader2 className="animate-spin h-8 w-8 text-blue-500" /></div>;
-  }
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
 
-  if (!user) {
-    router.push("/login");
-    return null;
+  if (loading || !user) {
+    return <div className="min-h-screen flex justify-center items-center"><Loader2 className="animate-spin h-8 w-8 text-blue-500" /></div>;
   }
 
   const handleSave = async (e: React.FormEvent) => {

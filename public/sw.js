@@ -1,7 +1,7 @@
 // Service Worker para EnferApp PWA
 // Estrategia: Cache-First para assets estáticos, Network-First para API calls
 
-const CACHE_NAME = 'enferapp-v1';
+const CACHE_NAME = 'enferapp-v2';
 const STATIC_ASSETS = [
   '/',
   '/estudio',

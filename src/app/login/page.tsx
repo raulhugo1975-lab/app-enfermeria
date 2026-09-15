@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,6 +14,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

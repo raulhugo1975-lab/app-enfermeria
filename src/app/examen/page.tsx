@@ -66,7 +66,7 @@ export default function SimuladorExamen() {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0 && examState === "IN_PROGRESS") {
-      handleFinishExam();
+      setExamState("RESULTS");
     }
     return () => clearInterval(timer);
   }, [examState, timeLeft]);
@@ -339,8 +339,15 @@ export default function SimuladorExamen() {
         <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-center">
           <Loader2 className="h-12 w-12 text-indigo-500 animate-spin mb-4" />
           <h2 className="text-xl font-bold text-slate-800 mb-2">
-            {examState === "LOADING" ? "Claude está elaborando el parcial..." : "Claude Visión está leyendo y corrigiendo el examen..."}
+            {examState === "LOADING"
+              ? "La Inteligencia Artificial está elaborando tu examen personalizado..."
+              : "La Inteligencia Artificial está analizando y corrigiendo la foto del examen..."}
           </h2>
+          <p className="text-sm text-slate-500 max-w-sm">
+            {examState === "LOADING"
+              ? "Generando 5 preguntas de opción múltiple con casos clínicos y fundamentos docentes."
+              : "Detectando preguntas, respuestas marcadas y evaluando según criterios médicos."}
+          </p>
         </div>
       )}
 
