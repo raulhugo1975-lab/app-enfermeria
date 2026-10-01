@@ -54,8 +54,10 @@ function RegisterForm() {
       });
 
       if (signInError) {
-        setError("Usuario creado, pero hubo un error al iniciar sesión.");
-        setLoading(false);
+        // Si el auto-login falla (puede pasar en iOS PWA), redirigimos al login
+        // con el email pre-cargado para que el usuario pueda ingresar manualmente
+        console.warn('Auto-login fallido tras registro, redirigiendo a login:', signInError.message);
+        router.push(`/login?email=${encodeURIComponent(email)}&registered=1`);
         return;
       }
 

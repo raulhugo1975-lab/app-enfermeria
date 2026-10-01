@@ -16,9 +16,12 @@ export async function POST(req: Request) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Faltan variables de entorno de Supabase Admin');
+      console.error('[register] Faltan variables de entorno:', {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey,
+      });
       return NextResponse.json(
-        { error: 'Error de configuración del servidor' },
+        { error: 'Error de configuración del servidor. Contactá al administrador.' },
         { status: 500 }
       );
     }
@@ -67,8 +70,10 @@ export async function POST(req: Request) {
         ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
-      // 3. Insertar perfil
-      const { error: profileError } = await supabaseAdmin.from('profiles').insert([
+      // 3. Insertar perfil — intentamos con todos los campos primero
+      let profileError: any = null;
+
+      const fullInsert = await supabaseAdmin.from('profiles').insert([
         {
           id: user.id,
           email,
@@ -80,13 +85,34 @@ export async function POST(req: Request) {
           is_active: true,
         },
       ]);
+      profileError = fullInsert.error;
+
+      // Si falla por columnas inexistentes (PGRST204 / 42703), hacemos fallback con campos base
+      if (profileError && (profileError.code === '42703' || profileError.message?.includes('column'))) {
+        console.warn('[register] Columnas extendidas no existen en profiles, usando fallback básico:', profileError.message);
+        const baseInsert = await supabaseAdmin.from('profiles').insert([
+          {
+            id: user.id,
+            email,
+            nombre,
+            pais,
+            universidad,
+          },
+        ]);
+        profileError = baseInsert.error;
+      }
 
       if (profileError) {
-        console.error('Error insertando perfil:', profileError);
-        // Podríamos intentar borrar el usuario en auth.users acá si falla el perfil, 
-        // pero por simplicidad devolvemos error.
+        console.error('[register] Error insertando perfil:', {
+          code: profileError.code,
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint,
+        });
+        // Intentar borrar el usuario en auth para no dejar estado inconsistente
+        await supabaseAdmin.auth.admin.deleteUser(user.id);
         return NextResponse.json(
-          { error: 'Usuario creado, pero hubo un error guardando el perfil.' },
+          { error: 'Error al guardar el perfil del usuario. Por favor intentá de nuevo.' },
           { status: 500 }
         );
       }

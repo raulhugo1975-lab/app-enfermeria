@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { BookOpen, Loader2 } from "lucide-react";
+import { BookOpen, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect } from "react";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -21,6 +23,18 @@ export default function LoginPage() {
       router.push("/");
     }
   }, [user, authLoading, router]);
+
+  // Pre-cargar email y mostrar mensaje si viene de un registro exitoso
+  useEffect(() => {
+    const emailParam = searchParams.get("email");
+    const registeredParam = searchParams.get("registered");
+    if (emailParam) {
+      setEmail(decodeURIComponent(emailParam));
+    }
+    if (registeredParam === "1") {
+      setSuccessMsg("¡Tu cuenta fue creada exitosamente! Ingresá tu contraseña para continuar.");
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +47,13 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError(error.message);
+      let msg = error.message;
+      if (msg.includes('Invalid login credentials')) {
+        msg = 'Email o contraseña incorrectos. Verificá tus datos.';
+      } else if (msg.includes('Email not confirmed')) {
+        msg = 'Debés confirmar tu email antes de ingresar.';
+      }
+      setError(msg);
       setLoading(false);
     } else {
       router.push("/");
@@ -57,6 +77,12 @@ export default function LoginPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-200">
           <form className="space-y-6" onSubmit={handleLogin}>
+            {successMsg && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm p-3 rounded-lg flex items-start">
+                <CheckCircle2 className="h-4 w-4 mr-2 mt-0.5 shrink-0" />
+                {successMsg}
+              </div>
+            )}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg">
                 {error}
@@ -122,5 +148,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
