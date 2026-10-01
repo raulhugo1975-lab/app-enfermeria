@@ -66,9 +66,18 @@ export async function POST(req: Request) {
 
     if (user) {
       // 2. Calcular subscription_ends_at
-      const trialEnd = refId
-        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        : null;
+      let trialEnd = null;
+      let userRole = 'user';
+
+      if (refId === 'BETA_ILIMITADA') {
+        // Acceso vitalicio (hasta 2099) para los testers permanentes
+        trialEnd = new Date('2099-12-31T23:59:59.999Z').toISOString();
+        userRole = 'beta_tester';
+      } else if (refId) {
+        // Acceso de 7 días por invitación normal
+        trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        userRole = 'beta_tester';
+      }
 
       // 3. Insertar perfil — intentamos con todos los campos primero
       let profileError: any = null;
@@ -80,7 +89,7 @@ export async function POST(req: Request) {
           nombre,
           pais,
           universidad,
-          role: refId ? 'beta_tester' : 'user',
+          role: userRole,
           subscription_ends_at: trialEnd,
           is_active: true,
         },
