@@ -43,7 +43,7 @@ Usa siempre lenguaje técnico médico adecuado y estructurado en Markdown (con l
     const fullPrompt = `${systemPrompt}\n\n${actionPrompt}\n\nAquí tienes el material bibliográfico:\n\n${content}`;
 
     const response = await genai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: fullPrompt,
     });
 

@@ -79,10 +79,10 @@ export async function POST(req: Request) {
         userRole = 'beta_tester';
       }
 
-      // 3. Insertar perfil — intentamos con todos los campos primero
+      // 3. Insertar/Actualizar perfil — intentamos con todos los campos primero
       let profileError: any = null;
 
-      const fullInsert = await supabaseAdmin.from('profiles').insert([
+      const fullInsert = await supabaseAdmin.from('profiles').upsert([
         {
           id: user.id,
           email,
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
       // Si falla por columnas inexistentes (PGRST204 / 42703), hacemos fallback con campos base
       if (profileError && (profileError.code === '42703' || profileError.message?.includes('column'))) {
         console.warn('[register] Columnas extendidas no existen en profiles, usando fallback básico:', profileError.message);
-        const baseInsert = await supabaseAdmin.from('profiles').insert([
+        const baseInsert = await supabaseAdmin.from('profiles').upsert([
           {
             id: user.id,
             email,

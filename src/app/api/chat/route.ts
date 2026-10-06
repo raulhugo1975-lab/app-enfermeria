@@ -25,7 +25,7 @@ NUNCA inventes información clínica ni dosis farmacológicas. Si hay dudas, ind
       : `Consulta del estudiante:\n${query}`;
 
     const response = await genai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: `${systemPrompt}\n\n${userPrompt}`,
     });
 

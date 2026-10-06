@@ -42,7 +42,7 @@ Incluye una mezcla equilibrada de casos clínicos prácticos y conceptos teóric
     const actionPrompt = `${systemPrompt}\n\nMateria: ${materia}\nTema específico a evaluar: ${tema}\n\nGenera el examen en formato JSON ahora.`;
 
     const response = await genai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: actionPrompt,
       config: {
         responseMimeType: 'application/json',
